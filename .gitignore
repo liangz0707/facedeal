@@ -11,4 +11,6 @@ dataset/*
 *.gz
 *.bib
 *.csv
+*.png
+*.dat
 *README
