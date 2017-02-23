@@ -1,7 +1,7 @@
 # coding:utf-8
 
 import cv2
-from face import faceppapi,facerecognize
+from expression_recognize import faceppapi,facerecognize
 import time
 
 
