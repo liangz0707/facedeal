@@ -1,5 +1,14 @@
 .idea/*
+dataset/*
+*.doc
+*.txt
 *.bmp
 *.jpeg
 *.jpg
 *.tiff
+*.zip
+*.pdf
+*.gz
+*.bib
+*.csv
+*README
