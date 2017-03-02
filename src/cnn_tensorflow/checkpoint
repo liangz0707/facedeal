@@ -1,0 +1,2 @@
+model_checkpoint_path: "fer_input_48_48_1_out_7-0"
+all_model_checkpoint_paths: "fer_input_48_48_1_out_7-0"

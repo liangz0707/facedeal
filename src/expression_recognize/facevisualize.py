@@ -1,17 +1,12 @@
 # coding:utf-8
-import tensorflow as tf
-import data_input
-import numpy as np
-import time
-import cv2
-import faceppapi as fapi
 import os
-import scipy as sci
-import numpy as NP
-from scipy import linalg as LA
+
+import cv2
 import matplotlib
-matplotlib.use('TkAgg')
-import matplotlib.pyplot as plt
+import numpy as NP
+import numpy as np
+from scipy import linalg as LA
+
 
 D = {"NE": 0, "DI": 1, "FE": 2, "HP": 3, "AN": 4, "SA": 5, "SU": 6}
 
@@ -43,35 +38,32 @@ def PCA(data, dims_rescaled_data=2):
     return NP.dot(evecs.T, data.T).T, evals, evecs
 
 
-def feature_face():
+def feature_face(images, dim = 10):
     """
     显示特征脸的PCA结果，我们发现主要的区分还是建立在人脸上
     :return:
     """
-    file_name_list = os.listdir("../../dataset/expression_rect")
-    rect_dir = "../../dataset/expression_rect/"
-    image_mat = np.zeros((len(file_name_list), 6400))
-    for i, file in enumerate(file_name_list):
-        if file[-3:] != 'jpg':
-            continue
-        image = cv2.imread(rect_dir + file)
+    shape = images[0].shape
+    cols = 0
+    rows = len(images)
+    if len(shape) == 1:
+        cols = 1
+    elif len(shape) == 2:
+        cols = shape[0] * shape[1]
+    elif len(shape) == 3:
+        cols = shape[0] * shape[1] * shape[2]
+    else:
+        print "数据纬度异常"
+        return
 
-        gray = np.asarray(cv2.cvtColor(image, cv2.COLOR_RGB2GRAY), dtype=np.uint8)
-        image_mat[i, :] = gray.reshape((80 * 80))
+    image_mat = np.zeros((rows, cols))
+    for i, image in enumerate(images):
+        vector = np.reshape(image, cols)
+        image_mat[i, :] = vector
 
-    Mat, evals, evecs = PCA(np.array(image_mat,dtype=np.float32).T, 4)
-
-    plt.figure(1)
-    points = image_mat.dot(Mat)
-
-    for i in range(1000):
-        plt.plot(points[:, 2], points[:, 3], "b.")
-
-        plt.plot(points[i, 2], points[i, 3], "r.")
-
-        cv2.imshow("ex", image_mat[i].reshape(80, 80)/255)
-        plt.show()
+    Mat, evals, evecs = PCA(np.array(image_mat, dtype=np.float32), dim)
+    return Mat, evals, evecs
 
 
 if "__main__" == __name__:
-    feature_face()
+    pass

@@ -3,9 +3,9 @@ import cv2
 import numpy as np
 import sys
 sys.path.append("..")
-import expression_recognize.faceppapi as fapi
+import expression_recognize.facedetection as fapi
 from scipy.spatial import Delaunay
-import expression_recognize.data_input as fdata
+import data_collector.data_input as fdata
 
 
 def compute_affine_mat(triangles, points_src, points_dst):
@@ -30,7 +30,7 @@ def compute_affine_mat(triangles, points_src, points_dst):
     return affines
 
 
-def draw_masks(triangles, points, mask_shape):
+def draw_masks(triangles, points, mask_shape, color=(1,1,1)):
     """
     绘制涂层遮罩，没有必要算每个三角形的变形通过遮罩赋值
     points是目标
@@ -42,7 +42,7 @@ def draw_masks(triangles, points, mask_shape):
         pos = np.array([np.array(points[T[0]]),
                         np.array(points[T[1]]),
                         np.array(points[T[2]])], dtype=np.int32)
-        cv2.fillPoly(mat, [pos], (1, 1, 1))
+        cv2.fillPoly(mat, [pos], color)
         masks.append(mat)
     return masks
 
@@ -182,9 +182,9 @@ def get_masked_face(mat, shape):
     return cv2.resize(result, shape)
 
 
-def test_face_trianglulation():
-    mat = cv2.imread("2.jpg")
-    mat = cv2.resize(mat, (mat.shape[0] * 5, mat.shape[1] * 5))
+def test_face_trianglulation(mat):
+    mat = cv2.resize(mat, (400, 400))
+
     landmark = fapi.get_feature_points_fromimage(mat)
     # 这里为了能够更好的提取人脸，手动添加两个特征点
 
@@ -207,7 +207,6 @@ def test_face_trianglulation():
     img[0] = cv2.equalizeHist(img[0])
     img[1] = cv2.equalizeHist(img[1])
     img[2] = cv2.equalizeHist(img[2])
-    cv2.imshow("mask", img)
     cv2.imshow("mat", mat)
     cv2.waitKey(0)
 
@@ -217,14 +216,23 @@ def test_face_deform():
         对已知剖分结果的三角面进行变形
     """
 
-    src = cv2.imread("tmp_data/NE1.jpg")
-    src = cv2.resize(src, (src.shape[1]/3, src.shape[0]/3))
+    src = cv2.imread("../../dataset/S076_006_00000001.png")
+    src = cv2.resize(src, (src.shape[1], src.shape[0]))
 
-    dst = cv2.imread("tmp_data/SU2_S1.jpg")
+    dst = cv2.imread("../../dataset/S076_006_00000009.png")
     dst = cv2.resize(dst, (src.shape[1], src.shape[0]))
 
     print src.shape
     print dst.shape
+
+    rows = src.shape[0]
+    cols = src.shape[1]
+    seat = np.zeros((rows, cols, 2))
+    for col in range(cols):
+        for row in range(rows):
+            seat[row][col][0] = row
+            seat[row][col][1] = col
+
     src_landmark = fapi.get_feature_points_fromimage(src)
     dst_landmark = fapi.get_feature_points_fromimage(dst)
     if dst_landmark is None or src_landmark is None:
@@ -236,8 +244,8 @@ def test_face_deform():
     add_landmark(dst_landmark)
 
     shape = src.shape
-    add_border_point(src_landmark, (shape[1],shape[0]))
-    add_border_point(dst_landmark, (shape[1],shape[0]))
+    add_border_point(src_landmark, (shape[1], shape[0]))
+    add_border_point(dst_landmark, (shape[1], shape[0]))
 
     '''
     这部分查看一下人脸的特征变形，这里需要计算人脸剖分的方案，需要覆盖全图
@@ -246,27 +254,32 @@ def test_face_deform():
     dst_points = from_lanmark_to_points(dst_landmark)
     triangles = trianglulation(src_points)
 
-    """
-    draw_triangle(src, triangles, src_points)
-    draw_triangle(dst, triangles, dst_points)
-
-    cv2.imshow("src",src)
-    cv2.imshow("dst",dst)
-    cv2.waitKey()
-    """
-
     affine_mats = compute_affine_mat(triangles, src_points, dst_points)
 
     warped_images = []
+    warped_seat = []
     for M in affine_mats:
-        I = cv2.warpAffine(src, M, (shape[1],shape[0]))
+        I = cv2.warpAffine(src, M, (shape[1], shape[0]))
+        I_seat = cv2.warpAffine(seat, M, (shape[1], shape[0]))
         warped_images.append(I)
+        warped_seat.append(I_seat)
 
     masks = draw_masks(triangles, dst_points, shape)
+    mask_seat = draw_masks(triangles, dst_points, seat.shape, color=(1, 1))
+
     result, one = combine_image(warped_images, masks, shape)
-    result = result + one * src
-    # draw_triangle(mat, triangles, points_dst)
-    cv2.imshow("dst", result / 255)
+    result_seat, one_seat = combine_image(warped_seat, mask_seat, seat.shape)
+
+    result_img = result + one * src
+    # draw_triangle(result_img,triangles, src_points)
+    result = result_seat + one_seat * seat
+    result[:,:,0] = cv2.normalize(cv2.absdiff(result[:,:,0],seat[:,:,0]),None, 0, 1, cv2.NORM_MINMAX)
+    result[:,:,1] = cv2.normalize(cv2.absdiff(result[:,:,1],seat[:,:,1]),None, 0, 1, cv2.NORM_MINMAX)
+
+    cv2.imshow("dst1", result[:,:,0])
+    cv2.imshow("dst2", result[:,:,1])
+    cv2.imshow("dst", result_img/255)
+    print result
 
     cv2.imshow("src", src)
     cv2.waitKey(0)
@@ -303,5 +316,19 @@ def test_fer2013_data():
 
 
 if "__main__" == __name__:
-    #  test_face_trianglulation()
-    test_face_deform()
+
+    input_file = "../../dataset/video/face1.mov"
+    vc = cv2.VideoCapture(input_file)
+    if vc.isOpened():
+        print "视频成功打开！"
+    else:
+        print "video can't open"
+
+    while vc.isOpened():
+        ret, input = vc.read()
+
+        if not ret:
+            break
+
+        test_face_trianglulation(input)
+    # test_face_deform()

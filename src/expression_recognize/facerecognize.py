@@ -1,11 +1,10 @@
 # coding:utf-8
-import tensorflow as tf
-import data_input
-import numpy as np
-import time
 import cv2
-import faceppapi as fapi
+import numpy as np
+import tensorflow as tf
 
+import facedetection as fapi
+from src.data_collector import data_input
 
 D = {"NE": 0, "DI": 1, "FE": 2, "HP": 3, "AN": 4, "SA": 5, "SU": 6}
 status = ["自然状态", "恶心", "害怕", "快乐", "生气", "难过", "惊讶"]
