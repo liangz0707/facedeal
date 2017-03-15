@@ -3,6 +3,7 @@ import dlib
 import cv2
 import os
 import time
+import numpy as np
 
 import requests
 import json
@@ -98,8 +99,8 @@ def from_filename2face(file_name, face_size, verbose=False):
         face = cv2.resize(face, face_size)
         return face
 
-#detector = dlib.get_frontal_face_detector()
-#predictor = dlib.shape_predictor("../../dataset/model/shape_predictor_68_face_landmarks.dat")
+detector = dlib.get_frontal_face_detector()
+predictor = dlib.shape_predictor("../../dataset/model/shape_predictor_68_face_landmarks.dat")
 
 
 def get_landmarks(image):
@@ -111,8 +112,9 @@ def get_landmarks(image):
     dets = detector(image, 1)
     landmarks = []
     for i, d in enumerate(dets):
-        landmarks.append(predictor(image, d))
-    return landmarks
+        shape = predictor(image, d)
+        landmarks.append([np.array([ shape.part(index).y - dets[0].top(), shape.part(index).x - dets[0].left()]) for index in range(68)])
+    return landmarks[0], (dets[0].left(), dets[0].top(), dets[0].right(), dets[0].bottom())
 
 
 def get_faces(image):

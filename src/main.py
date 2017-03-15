@@ -106,18 +106,6 @@ def gabor_fn(sigma, theta, Lambda, psi, gamma):
 
 if __name__ == '__main__':
     # ck_training_data_trasform()
-    # ck_vis()
-    cu = cv2.getGaussianKernel(10, 2)
-    print cu
-    filter = np.multiply(cu,cu.T)
-    gus = cv2.normalize(filter,None, 0 ,1,cv2.NORM_MINMAX)
-    kern = cv2.getGaborKernel((100, 100), 15.0, 3.14/2, 1.5, 10, 0, ktype=cv2.CV_32F)
-
-    image = cv2.imread("../dataset/S067_002_00000006.png")
-    cv2.imshow("aa", image)
-    image_bluter = cv2.filter2D(image, cv2.CV_8UC3, kern)
-    cv2.imshow("gus",kern)
-    cv2.waitKey(0)
-
+    ck_vis()
 
 

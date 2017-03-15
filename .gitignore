@@ -14,3 +14,6 @@ dataset/*
 *.png
 *.dat
 *README
+*.pdf
+*.rar
+*.xlsx

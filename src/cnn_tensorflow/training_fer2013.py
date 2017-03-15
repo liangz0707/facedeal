@@ -4,9 +4,7 @@ import cv2
 import numpy as np
 import os
 import tensorflow as tf
-import sys
-sys.path.append("..")
-import data_collector.data_input as dc
+import cPickle
 
 
 D = {"NE": 0, "DI": 1, "FE": 2, "HP": 3, "AN": 4, "SA": 5, "SU": 6}
@@ -182,7 +180,9 @@ def evaluation(logits, labels_holder):
 def training_fer2013():
     with tf.Graph().as_default():
         sess = tf.InteractiveSession()
-        train_image, train_label, test_image, test_label = dc.load_kaggle_face_data(1000)
+        file = open("fer2013full.cpickle", "rb")
+
+        train_image, train_label, test_image, test_label = cPickle.load(file)
 
         print ("数据读取完成")
         print ("训练数据%s,测试数据%s" % (len(train_image), len(test_image)))
