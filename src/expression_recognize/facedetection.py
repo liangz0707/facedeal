@@ -33,6 +33,17 @@ def get_feature_point(image_file, verbose=False):
     return jd.decode(response.content)
 
 
+def from_lanmark_to_points(landmarks):
+    """
+    将图片的标准点格式转换成points格式
+    :return:
+    """
+    points = dict()
+    for k in landmarks:
+        points[k] = (landmarks[k]["x"], landmarks[k]["y"])
+    return points
+
+
 def get_feature_points_fromimage(image, verbose=False):
     """
     通过图片获取特征点，通过人脸图像获取举行位置和全部83个特征点，先保存成文件，然后再上传这个文件
@@ -99,8 +110,8 @@ def from_filename2face(file_name, face_size, verbose=False):
         face = cv2.resize(face, face_size)
         return face
 
-detector = dlib.get_frontal_face_detector()
-predictor = dlib.shape_predictor("../../dataset/model/shape_predictor_68_face_landmarks.dat")
+#detector = dlib.get_frontal_face_detector()
+#predictor = dlib.shape_predictor("../../dataset/model/shape_predictor_68_face_landmarks.dat")
 
 
 def get_landmarks(image):

@@ -1,12 +1,18 @@
 # coding:utf-8
-import data_collector.data_input as din
-import expression_recognize.facevisualize as fv
+
 import matplotlib
 matplotlib.use('TkAgg')
+
+import data_collector.data_input as din
+import expression_recognize.facevisualize as fv
+
 import cv2
 import matplotlib.pyplot as plt
 import cPickle
 import numpy as np
+import img_toolkits.OpticalFlow_feature as of
+import expression_recognize.facedetection as fd
+
 
 def face_vis():
     train_image, train_label, test_image, test_image = din.load_kaggle_face_data(max_len=1000)
@@ -82,30 +88,71 @@ def ck_training_data_trasform():
     cPickle.dump((gray_faces, labels, gray_tests), ck_faces)
 
 
-def gabor_fn(sigma, theta, Lambda, psi, gamma):
-    sigma_x = sigma
-    sigma_y = float(sigma) / gamma
+def flow_reader(file_path):
+    """
+    从FileSortage文件当中读取保存的数据
+    :return:
+        """
+    U = np.asarray(cv2.cv.Load(file_path, cv2.cv.CreateMemStorage(), "U"))
+    V = np.asarray(cv2.cv.Load(file_path, cv2.cv.CreateMemStorage(), "V"))
+    return U, V
 
-    # Bounding box
-    nstds = 3
-    xmax = max(abs(nstds * sigma_x * np.cos(theta)), abs(nstds * sigma_y * np.sin(theta)))
-    xmax = np.ceil(max(1, xmax))
-    ymax = max(abs(nstds * sigma_x * np.sin(theta)), abs(nstds * sigma_y * np.cos(theta)))
-    ymax = np.ceil(max(1, ymax))
-    xmin = -xmax
-    ymin = -ymax
-    (y, x) = np.meshgrid(np.arange(ymin, ymax + 1), np.arange(xmin, xmax + 1))
 
-    # Rotation
-    x_theta = x * np.cos(theta) + y * np.sin(theta)
-    y_theta = -x * np.sin(theta) + y * np.cos(theta)
+def test_affine_mat():
+    feature_point_front = np.array([(1, 2), (3, 4), (3, 8)], dtype=np.float32)
+    feature_point_back = feature_point_front * 1
+    op = of.OpticalFlow()
+    mat = op.calc_affine_mat(feature_point_front, feature_point_back)
+    print mat
+    pass
 
-    gb = np.exp(-.5 * (x_theta ** 2 / sigma_x ** 2 + y_theta ** 2 / sigma_y ** 2)) * np.cos(2 * np.pi / Lambda * x_theta + psi)
-    return gb
+
+def aligen(image1,image2,U,V):
+    pass
 
 
 if __name__ == '__main__':
-    # ck_training_data_trasform()
-    ck_vis()
+    """
+    人脸对齐：
+    1。读取光流，文件中的内容
+    2。读取两帧图像
+    3。读取第一帧图像的特征点
+    4。计算由光流变到第二帧后的位置。
+    5。计算仿射变换
+    6。对第二张图像进行仿射变换来对齐
+    """
+
+    im1 = cv2.imread("../dataset/sub03/EP01_2/img51.jpg")
+    im2 = cv2.imread("../dataset/sub03/EP01_2/img52.jpg")
+    U, V = flow_reader("../dataset/sub03/EP01_2/reg_flow51.xml")
+    vd = fd.get_feature_points_fromimage(im1)
+    points = np.array(fd.from_lanmark_to_points(vd).values())
+
+    # for i, point in enumerate(points):
+    #     print point
+    #     cv2.circle(im1, (point[0], point[1]) ,1, (0,255,0))
+    #     cv2.putText(im1, str(i),(point[0]-10, point[1]) , cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0, 255, 0))
+    # cv2.imshow("a",im1)
+    # cv2.waitKey(0)
+
+    """
+    face++提取的特征点索引"""
+    counter_index = [25,24,23,22,21,20,19,56,15,14,41,65,32,76,36,31,27,29,6]
+
+    feature_pos = points[counter_index]
+    # 通过光流计算feature_back
+    feature_back = []
+    for pos in feature_pos:
+        new_pos = (pos[0] + U[pos[1]][pos[0]], pos[1] + V[pos[1]][pos[0]])
+        print pos, new_pos
+        feature_back.append(new_pos)
+    fl = of.OpticalFlow()
+    mat = fl.calc_affine_mat(np.array(feature_back, dtype=np.float32),np.array(feature_pos, dtype=np.float32))
+    print mat
+    A = cv2.warpPerspective(im1, mat.T, (im1.shape[1],im1.shape[0]))
+    B = cv2.warpPerspective(im2, mat.T, (im1.shape[1],im1.shape[0]))
+    cv2.imwrite("../dataset/sub03/EP01_2/img51_a.jpg",A)
+    cv2.imwrite("../dataset/sub03/EP01_2/img52_a.jpg",B)
+
 
 

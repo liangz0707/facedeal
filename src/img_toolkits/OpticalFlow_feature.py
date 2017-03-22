@@ -5,6 +5,7 @@ import numpy as np
 import cv2
 import math
 
+
 class OpticalFlow:
     def __init__(self):
         self.colorwheel = self.makecolorwheel()
@@ -105,6 +106,12 @@ class OpticalFlow:
         return vis
 
     def calc_flow(self, img1, img2):
+        """
+        输入两张图片，单通道的灰度图或者三通道的RGB图，返回一个光流
+        :param img1:
+        :param img2:
+        :return:
+        """
         gray1 = None
         gray2 = None
         if len(img1.shape) == 3:
@@ -121,5 +128,19 @@ class OpticalFlow:
         flow = cv2.calcOpticalFlowFarneback(gray1, gray2, 0.5, 4, 25, 3, 5, 1.5, 0)
         return flow
 
-if __name__ == '__main__':
-    pass
+    def calc_affine_mat(self, feature_point_front, feature_point_back):
+        # 要扩展一维常量1才能方便计算
+
+        X = np.pad(feature_point_front, (0, 1), 'constant', constant_values=(0, 1))[:-1]
+        Y = np.pad(feature_point_back, (0, 1), 'constant', constant_values=(0, 1))[:-1]
+        # l2范式的解析解, 这部分可能使用l1范式求解
+        T = np.dot(np.linalg.inv(np.dot(X.T, X) + 0.000001 * np.eye(3)), np.dot(X.T, Y))
+
+        # R = np.dot(X, T)
+        # for i in R:
+        #     print i[0] / i[2], i[1] / i[2]
+        # print Y
+
+        return T
+
+
