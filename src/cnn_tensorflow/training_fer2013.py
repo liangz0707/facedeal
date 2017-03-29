@@ -136,13 +136,6 @@ def inference(x):
     return y_conv, {}, {"keep_prob": keep_prob}
 
 
-def loss(logits, labels):
-    cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits, labels, name='xentropy')
-    loss = tf.reduce_mean(cross_entropy, name='xentropy_mean')
-    tf.add_to_collection('losses', loss)
-    return tf.add_n(tf.get_collection('losses'), name='total_loss')
-
-
 def training(images, labels, test_images, test_labels, keys, values, images_holder, labels_holder, l, e, sess, learning_rate=1e-4, reload=False, model_file=""):
 
     train_step = tf.train.AdamOptimizer(learning_rate).minimize(l)
@@ -170,6 +163,15 @@ def training(images, labels, test_images, test_labels, keys, values, images_hold
             ac = sess.run(e, feed_dict=feed_dict)
 
             print('Step %d: loss = %.2f (%.3f )' % (i, loss_value, ac))
+
+
+
+def loss(logits, labels):
+    cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits, labels, name='xentropy')
+    loss = tf.reduce_mean(cross_entropy, name='xentropy_mean')
+    tf.add_to_collection('losses', loss)
+    return tf.add_n(tf.get_collection('losses'), name='total_loss')
+
 
 
 def evaluation(logits, labels_holder):

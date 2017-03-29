@@ -30,7 +30,10 @@ def get_feature_point(image_file, verbose=False):
         print response.content
 
     jd = json.JSONDecoder()
-    return jd.decode(response.content)
+    if len(jd.decode(response.content)['faces']) == 0:
+        return None, None
+    else:
+        return jd.decode(response.content)['faces'][0]['landmark'], jd.decode(response.content)['faces'][0]['face_rectangle']
 
 
 def from_lanmark_to_points(landmarks):

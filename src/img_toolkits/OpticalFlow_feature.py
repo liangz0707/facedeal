@@ -133,6 +133,7 @@ class OpticalFlow:
 
         X = np.pad(feature_point_front, (0, 1), 'constant', constant_values=(0, 1))[:-1]
         Y = np.pad(feature_point_back, (0, 1), 'constant', constant_values=(0, 1))[:-1]
+        Y = feature_point_back
         # l2范式的解析解, 这部分可能使用l1范式求解
         T = np.dot(np.linalg.inv(np.dot(X.T, X) + 0.000001 * np.eye(3)), np.dot(X.T, Y))
 
