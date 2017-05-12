@@ -14,6 +14,7 @@ import img_toolkits.OpticalFlow_feature as of
 import expression_recognize.facedetection as fd
 import os
 import time
+import img_toolkits.fequence_tools as ft
 
 def face_vis():
     train_image, train_label, test_image, test_image = din.load_kaggle_face_data(max_len=1000)
@@ -152,7 +153,7 @@ def check_run():
         check_run()
 
 
-def camse2_rect_aligened() :
+def camse2_rect_aligened():
     """
     将CAMSE2的数据中的人脸，和特征点全部提取出来
     :return:
@@ -274,8 +275,59 @@ def test_affine_mat():
     pass
 
 
+def feature_flow_extract():
+    """
+    人脸区域光流提取
+    :return:
+    """
+    p = "../dataset/datashow/face_aligen/EP02_01f/"
+    pf = "../dataset/datashow/flow_aligen/EP02_01f/"
+    file_name_list = os.listdir(p)
+    dir = p
+    for file in file_name_list:
+        if file[-3:] != "jpg":
+            continue
+        img = cv2.imread(dir+file)
+
+        landmarks = fd.get_feature_points_fromimage(img)
+        points = fd.from_lanmark_to_points(landmarks)
+        fd.supply_landmark(points)
+        regions = fd.get_region_by_landmark()
+        points_list = []
+        mask = np.zeros(img.shape[0:2])
+        for i in regions:
+            tmp_point = []
+            for mark_name in i:
+                tmp_point.append(points[mark_name])
+            points_list.append(tmp_point)
+            fd.draw_region(img, tmp_point)
+            fd.draw_region_mask(mask, tmp_point)
+
+        # 光流
+        U,V = ft.flow_reader(pf+"reg_flow"+file[3:-4]+".xml")
+        flow = np.zeros((U.shape[0],U.shape[1], 2))
+        value = (U * np.sqrt(1/2.0) + V * np.sqrt(1/2.0) )*mask
+        value = cv2.normalize(value,None, 0, 1,cv2.NORM_MINMAX)
+        plt.imshow(value*mask, cmap="gray")
+        plt.show()
+        for i in range(U.shape[0]):
+            for j in range(U.shape[1]):
+                if mask[i][j] == 1:
+                    flow[i][j] = (U[i][j], V[i][j])
+        opt = of.OpticalFlow()
+        clolc = opt.visual_flow(flow)
+        cv2.imshow("a", clolc)
+        cv2.waitKey(0)
+
+
+        cv2.imshow("a", img)
+        cv2.waitKey(0)
+        print points_list
+
 if __name__ == '__main__':
-    camse2_rect_aligened()
+    # camse2_rect_aligened()
+    feature_flow_extract()
+    pass
 
 
 
